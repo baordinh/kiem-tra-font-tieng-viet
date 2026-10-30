@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kiểm tra font tiếng Việt</title>
+    <meta name="description" content="Kéo font vào để biết nó thiếu dấu tiếng Việt nào. Miễn phí, font không rời khỏi máy bạn." />
+    <style>
+      :root { --bg: #0d0c0b; --panel: #191816; --ink: #f4efe6; --dim: #a8a196; --hot: #ff6a3d; --ok: #63d48f; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif; }
+      main { max-width: 760px; margin: 0 auto; padding: 48px 16px; }
+      h1 { font-size: clamp(30px, 7vw, 46px); line-height: 1.25; margin: 0 0 12px; }
+      p { color: var(--dim); margin: 0 0 24px; }
+      #drop { display: block; padding: 40px 16px; border: 2px dashed var(--dim); text-align: center; cursor: pointer; }
+      #drop.over, #drop:hover { border-color: var(--hot); }
+      #drop:focus-within { outline: 2px solid var(--hot); outline-offset: 2px; }
+      input[type="file"] { position: absolute; opacity: 0; width: 1px; height: 1px; }
+      .card { background: var(--panel); padding: 20px; margin-top: 16px; overflow-wrap: anywhere; }
+      .card h2 { font-size: 18px; margin: 0 0 4px; }
+      .pct { font-weight: 700; color: var(--hot); }
+      .pct.full { color: var(--ok); }
+      .err { color: var(--hot); margin: 0; }
+      .sample { font-size: 30px; line-height: 1.5; margin: 12px 0; color: var(--ink); }
+      .miss { color: var(--ink); letter-spacing: 0.15em; margin: 0; }
+      #ung-ho { margin-top: 48px; }
+      footer { margin-top: 32px; font-size: 14px; color: var(--dim); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Font này có đủ dấu tiếng Việt không?</h1>
+      <p>Kéo font vào để biết nó thiếu ký tự nào trước khi bị lỗi dấu trong thiết kế hoặc video. Font không rời khỏi máy bạn.</p>
+      <label id="drop">
+        <input id="file" type="file" accept=".ttf,.otf,.woff" multiple />
+        Kéo thả hoặc bấm để chọn file .ttf, .otf, .woff
+      </label>
+      <div id="results" aria-live="polite"></div>
+      <section id="ung-ho"></section>
+      <footer>Công cụ do Claude (AI) viết, Bảo Đinh vận hành. Kết quả dựa trên bảng ký tự của font, chưa kiểm tra chất lượng vẽ dấu.</footer>
+    </main>
+    <script src="opentype.min.js"></script>
+    <script src="coverage.js"></script>
+    <script>
+      const results = document.getElementById("results");
+      const drop = document.getElementById("drop");
+      const SAMPLE = "Chuyển động Đặng Ưng Ộ Ễ Ỷ";
+
+      function card() {
+        const el = document.createElement("div");
+        el.className = "card";
+        results.prepend(el);
+        return el;
+      }
+
+      function add(parent, tag, text, cls) {
+        const el = document.createElement(tag);
+        el.textContent = text;
+        if (cls) el.className = cls;
+        parent.append(el);
+        return el;
+      }
+
+      async function handle(file) {
+        const el = card();
+        add(el, "h2", file.name);
+        if (/\.woff2$/i.test(file.name)) {
+          add(el, "p", "Chưa hỗ trợ WOFF2. Hãy dùng .ttf, .otf hoặc .woff.", "err");
+          return;
+        }
+        try {
+          const buffer = await file.arrayBuffer();
+          const font = opentype.parse(buffer);
+          const r = FontCoverage.checkCoverage(font);
+          const name = font.names.fullName && (font.names.fullName.en || Object.values(font.names.fullName)[0]);
+          if (name) add(el, "p", name);
+          const full = r.missing.length === 0;
+          add(el, "div", full ? `Đủ ${r.total}/${r.total} ký tự tiếng Việt` : `Có ${r.supported.length}/${r.total} ký tự (${r.percent}%)`, full ? "pct full" : "pct");
+          const family = "preview-" + crypto.randomUUID();
+          const face = new FontFace(family, buffer.slice(0));
+          await face.load();
+          document.fonts.add(face);
+          const sample = add(el, "div", SAMPLE, "sample");
+          sample.style.fontFamily = `"${family}", serif`;
+          if (!full) {
+            add(el, "p", "Thiếu:");
+            add(el, "p", r.missing.join(" "), "miss");
+          }
+        } catch (e) {
+          add(el, "p", "Không đọc được file này. File có thể bị hỏng hoặc không phải font.", "err");
+        }
+      }
+
+      function handleAll(files) {
+        [...files].forEach(handle);
+      }
+
+      document.getElementById("file").addEventListener("change", (e) => handleAll(e.target.files));
+      ["dragover", "dragenter"].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+      ["dragleave", "drop"].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+      drop.addEventListener("drop", (e) => handleAll(e.dataTransfer.files));
+    </script>
+  </body>
+</html>
