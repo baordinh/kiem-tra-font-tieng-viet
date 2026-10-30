@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://baordinh.github.io/kiem-tra-font-tieng-viet/sitemap.xml

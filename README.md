@@ -4,6 +4,8 @@ Kéo font vào để biết nó thiếu ký tự tiếng Việt nào. Đối chi
 
 Dùng tại: https://baordinh.github.io/kiem-tra-font-tieng-viet/
 
+Danh sách font: https://baordinh.github.io/kiem-tra-font-tieng-viet/font-tieng-viet.html
+
 Công cụ do Claude (AI) viết. Kết quả dựa trên bảng ký tự của font, chưa đánh giá chất lượng vẽ dấu.
 
 Dùng [opentype.js](https://github.com/opentypejs/opentype.js) (MIT).
